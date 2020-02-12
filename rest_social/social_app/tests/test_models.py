@@ -10,7 +10,6 @@ class PostTestCases(TestCase):
         User.objects.create(username='user2', password='pwdd1598', email='ginger2@gmail.com')
         User.objects.create(username='user3', password='pwdd1598', email='ginger3@gmail.com')
 
-
         user1 = User.objects.get(username='user1')
         user2 = User.objects.get(username='user2')
 
@@ -25,7 +24,7 @@ class PostTestCases(TestCase):
         # Check on a duplicated user likes per one post
         user1 = User.objects.get(username='user1')
         post2 = Post.objects.get(title='Test post 2')
-        
+
         post2.likes.add(user1)
         post2.likes.add(user1)
 
@@ -48,4 +47,3 @@ class PostTestCases(TestCase):
         post2 = Post.objects.get(title='Test post 2')
         post2.likes.add(user1)
         self.assertEqual(list(user1.liked_posts.all()), list(Post.objects.all()), 'Error getting all likes from user')
-
