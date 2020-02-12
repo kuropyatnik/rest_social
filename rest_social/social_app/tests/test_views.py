@@ -4,6 +4,8 @@ from django.urls import reverse
 from django.contrib.auth.hashers import make_password
 
 from rest_social.social_app.models import User, Post
+from rest_social.settings import SECRET_KEY
+import jwt
 
 # Tests for registration request with data validating, checking for existing users, email verification
 class TestRegistration(APITestCase):
@@ -37,7 +39,8 @@ class TestRegistration(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST, 'Undeliverable email was passed')
         # Good email
         response = self.client.post(reverse('register'),
-                                    {'username': 'test_user', 'password': 'testpass111', 'email': 'platformcs@support.facebook.com'})
+                                    {'username': 'test_user', 'password': 'testpass111',
+                                     'email': 'platformcs@support.facebook.com'})
         self.assertEqual(response.status_code, status.HTTP_201_CREATED, 'New user not created')
 
     def test_checking_for_existing_user(self):
@@ -53,6 +56,40 @@ class TestRegistration(APITestCase):
 
     def test_successful_registration(self):
         response = self.client.post(reverse('register'),
-                                    {'username': 'gooduser', 'password': 'testpass111', 'email': 'new_test_email@gmail.com'})
+                                    {'username': 'gooduser', 'password': 'testpass111',
+                                     'email': 'new_test_email@gmail.com'})
         self.assertEqual(response.status_code, status.HTTP_201_CREATED, 'New user not created')
         self.assertTrue(User.objects.get(username='gooduser') is not None, msg='User was not saved')
+
+# Tests for login view; jwt implementation, fields checking
+class TestLoginView(APITestCase):
+    def setUp(self):
+        User.objects.create(username='user1', password=make_password('chat1597'), email='test_email1@gmail.com')
+        User.objects.create(username='user2', password=make_password('chat1597'), email='test_email2@gmail.com')
+
+    def test_requiredFieldChecking(self):
+        response = self.client.post(reverse('login'), {'username': ''})
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST, 'Missed required field')
+
+    def test_wrongAllCredentials(self):
+        response = self.client.post(reverse('login'), {'username': 'wronguser', 'password': 'wrongpassword'})
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST, 'Wrong credentials passed')
+
+    def test_wrongSomeCredentials(self):
+        response = self.client.post(reverse('login'), {'username': 'user1', 'password': 'wrongpassword'})
+        self.assertEqual(response.status_code, status.HTTP_409_CONFLICT, 'Wrong password passed')
+
+    def test_successfulAuth(self):
+        response = self.client.post(reverse('login'),
+                                    {'username': 'user1', 'password': 'chat1597'})
+
+        print(response.data)
+        received = jwt.decode(response.data['token'], SECRET_KEY, ['HS256'])
+        expected = {
+            'id': 1,
+            'username': 'user1'
+        }
+        print(received, expected)
+        self.assertEqual(response.status_code, status.HTTP_200_OK, 'Authorization failed')
+        self.assertEqual(received, expected, 'JWT token failed')
+
