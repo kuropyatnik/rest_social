@@ -28,7 +28,6 @@ class TestRegistration(APITestCase):
     def test_easy_password_handling(self):
         response = self.client.post(reverse('register'),
                                     {'username': 'test_user', 'password': '12345', 'email': 'blahblah@blah.com'})
-        print(response.data)
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST, 'Bad password was passed')
 
     def test_email_validation(self):
@@ -50,9 +49,9 @@ class TestRegistration(APITestCase):
         # Existing email
         response = self.client.post(reverse('register'),
                                     {'username': 'user5', 'password': 'testpass111', 'email': 'test_email1@gmail.com'})
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST, 'Status not 400')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST, 'Duplicated email was added')
 
-    def test_successfulRegistration(self):
+    def test_successful_registration(self):
         response = self.client.post(reverse('register'),
                                     {'username': 'gooduser', 'password': 'testpass111', 'email': 'new_test_email@gmail.com'})
         self.assertEqual(response.status_code, status.HTTP_201_CREATED, 'New user not created')
