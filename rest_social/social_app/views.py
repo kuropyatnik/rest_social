@@ -4,9 +4,10 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.exceptions import ParseError
 from django.contrib.auth.hashers import make_password
+from django.db.models import Value, IntegerField
 from rest_framework.views import status
 from rest_social.settings import SECRET_KEY
-from .serializers import UserSerializer, LoginSerializer, PostSerializer, PostsOutputSerializer
+from .serializers import UserSerializer, LoginSerializer, PostSerializer, PostsOutputSerializer, PostOutputSerializer
 from .models import User, Post
 from .authentication import TokenAuthentication
 from .pagination import CustomPagination
@@ -102,3 +103,30 @@ def get_all_posts_view(request):
     result_page = paginator.paginate_queryset(posts, request)
     serializer = PostsOutputSerializer(result_page, many=True, context={'request': request})
     return paginator.get_paginated_response(serializer.data)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated, ])
+@authentication_classes([TokenAuthentication, ])
+def get_post_view(request, pk):
+    authentication_classes(TokenAuthentication, )
+    user_data = jwt.decode(bytes(request.headers.get('token'), 'utf-8'), SECRET_KEY, ['HS256'])
+    user = User.objects.get(username=user_data['username'])
+    try:
+        if Post.objects.get(id=pk) is not None:
+            post = Post.objects.get(id=pk)
+            like_value = 1 if user in post.likes.all() else 0
+            serializer = PostOutputSerializer(post, many=False, context={'request': request})
+            data = serializer.data
+            data['like'] = like_value
+            status_code = status.HTTP_200_OK
+
+        else:
+            data = {'Error': 'Post with id "{0}" does not exist'.format(pk)}
+            status_code = status.HTTP_400_BAD_REQUEST
+    except Exception as e:
+        data = {'Error': 'Bad request ' + str(e)}
+        status_code = status.HTTP_400_BAD_REQUEST
+
+    return Response(data=data, status=status_code)
+

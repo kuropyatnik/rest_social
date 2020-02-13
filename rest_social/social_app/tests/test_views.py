@@ -5,7 +5,7 @@ from django.contrib.auth.hashers import make_password
 
 from rest_social.social_app.models import User, Post
 from rest_social.settings import SECRET_KEY
-import jwt, json
+import jwt
 
 
 # Method for token generation
@@ -181,22 +181,21 @@ class TestPostRetrieving(APITestCase):
         post1.likes.add(user2)
 
     def test_getWrongPost(self):
-        response = self.client.post(reverse('post'), kwargs={'pk': '57'}, **user_token(2, 'user2'))
-        print(json.dumps(response.body))
+        response = self.client.get('http://testserver/post/27/', **user_token(2, 'user2'))
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST, 'Wrong post was returned')
 
     def test_getPost(self):
         # Check from the liked user
-        response = self.client.post(reverse('post'), kwargs={'pk': '1'}, **user_token(2, 'user2'))
-        print(json.dumps(response.body))
-        result = json.dumps(response.body)
+        response = self.client.get('http://testserver/post/1/', content_type='application/json', **user_token(2, 'user2'))
+        print(response.data)
+        result = response.data
         self.assertEqual(response.status_code, status.HTTP_200_OK, 'Request failed')
         self.assertEqual(result['like'], 1, 'Like is not registered')
 
         # Check from the non liked user
-        response = self.client.post(reverse('post'), kwargs={'pk': '1'}, **user_token(1, 'user1'))
-        print(json.dumps(response.body))
-        result = json.dumps(response.body)
+        response = self.client.get('http://testserver/post/1/', content_type='application/json', **user_token(1, 'user1'))
+        print(response.data)
+        result = response.data
         self.assertEqual(response.status_code, status.HTTP_200_OK, 'Request failed')
         self.assertEqual(result['like'], 0, 'Like exists, but it doesnt need to be there')
 
