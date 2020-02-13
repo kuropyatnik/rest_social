@@ -114,27 +114,54 @@ class TestAddPostView(APITestCase):
 
     def test_Auth(self):
         response = self.client.post(reverse('add-post'),
-                                    {'creator': '1', 'title': 'Post Title', 'content': 'Post content'})
+                                    {'title': 'Post Title', 'content': 'Post content'})
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN, 'Problems with JWT')
 
     def test_FieldsValidating(self):
         response = self.client.post(reverse('add-post'),
-                                    {'creator': '', }, **user_token(1, 'user1'))
-        print(response.data)
+                                    {'title': '', }, **user_token(1, 'user1'))
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST, 'Fields dont validate')
 
         response = self.client.post(reverse('add-post'),
-                                    {'creator': '2', 'title': 'Post title', 'content': ''},
+                                    {'title': 'Post title', 'content': ''},
                                     **user_token(2, 'user2'))
-        print(response.data)
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST, 'Adding post with empty content')
 
     def test_SuccessfulSending(self):
         response = self.client.post(reverse('add-post'),
-                                    {'creator': '2', 'title': 'Post title', 'content': 'Post content'},
+                                    {'title': 'Post title', 'content': 'Post content'},
                                     **user_token(2, 'user2'))
         print(response.data)
         self.assertEqual(response.status_code, status.HTTP_200_OK, 'Sending problems')
 
         user2 = User.objects.get(username='user2')
-        self.assertEqual(Post.objects.filter(creator=user2), Post.objects.all(), 'Post wasnt added')
+        self.assertTrue(Post.objects.filter(creator=user2) is not None, 'Post wasnt added')
+
+
+class TestPostsRetieving(APITestCase):
+    def setUp(self):
+        user1 = User.objects.create(username='user1', password=make_password('chat1597'), email='test_email1@gmail.com')
+
+        # Filling posts
+        for i in range(1, 25):
+            Post.objects.create(creator=user1, title='Post title №{0}'.format(i), content='Message {0}'.format(i))
+
+    def test_getPageOfMessages(self):
+
+        # Get first page by default
+        response = self.client.get('http://testserver/posts/', content_type='application/json',
+                                   **user_token(1, 'user1'))
+        print(response.data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK, 'Request failed')
+
+        # Get third page
+        response = self.client.get('http://testserver/posts?page=3', content_type='application/json',
+                                   **user_token(1, 'user1'))
+        print(response.data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK, 'Request failed')
+
+    def test_getWrongPage(self):
+        response = self.client.get('http://testserver/posts?page=70', content_type='application/json',
+                                   **user_token(1, 'user1'))
+        print(response.data)
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND, 'Wrong page showing')

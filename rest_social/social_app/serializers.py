@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import User
+from .models import User, Post
 from django.core.exceptions import ValidationError
 import django.contrib.auth.password_validation as validators
 from rest_social.settings import EMAIL_HUNTER_API_KEY
@@ -8,7 +8,6 @@ import requests
 
 class UserSerializer(serializers.ModelSerializer):
     def validate(self, data):
-
         # define custom exception
         class EmailVerificationError(Exception):
             pass
@@ -55,3 +54,9 @@ class UserSerializer(serializers.ModelSerializer):
 class LoginSerializer(serializers.Serializer):
     username = serializers.CharField(required=True, allow_null=False)
     password = serializers.CharField(required=True, allow_null=False)
+
+
+class PostSerializer(serializers.Serializer):
+    class Meta:
+        model = Post
+        fields = ('title', 'content')

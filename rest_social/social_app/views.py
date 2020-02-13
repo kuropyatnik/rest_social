@@ -9,6 +9,7 @@ from rest_social.settings import SECRET_KEY
 from .serializers import UserSerializer, LoginSerializer, PostSerializer
 from .models import User, Post
 from .authentication import TokenAuthentication
+from .pagination import CustomPagination
 import jwt
 
 
@@ -87,3 +88,7 @@ def add_post_view(request):
         data = {'Error': 'Bad request ' + str(e)}
         status_code = status.HTTP_400_BAD_REQUEST
     return Response(data=data, status=status_code)
+
+
+
+

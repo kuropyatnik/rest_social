@@ -74,6 +74,8 @@ TEMPLATES = [
 
 REST_FRAMEWORK = {
     'TEST_REQUEST_DEFAULT_FORMAT': 'json',
+    'DEFAULT_PAGINATION_CLASS': 'social_app.pagination.CustomPagination',
+    'PAGE_SIZE': 10,
 }
 
 WSGI_APPLICATION = 'rest_social.wsgi.application'
