@@ -5,7 +5,7 @@ from django.contrib.auth.hashers import make_password
 
 from rest_social.social_app.models import User, Post
 from rest_social.settings import SECRET_KEY
-import jwt
+import jwt, json
 
 
 # Method for token generation
@@ -138,6 +138,7 @@ class TestAddPostView(APITestCase):
         self.assertTrue(Post.objects.filter(creator=user2) is not None, 'Post wasnt added')
 
 
+# Tests for the entire posts set retrieving with pagination checks
 class TestPostsRetrieving(APITestCase):
     def setUp(self):
         user1 = User.objects.create(username='user1', password=make_password('chat1597'), email='test_email1@gmail.com')
@@ -145,6 +146,9 @@ class TestPostsRetrieving(APITestCase):
         # Filling posts
         for i in range(1, 25):
             Post.objects.create(creator=user1, title='Post title №{0}'.format(i), content='Message {0}'.format(i))
+
+        post1 = Post.objects.get(title='Post title №1')
+        post1.likes.add(user1)
 
     def test_getPageOfMessages(self):
 
@@ -165,3 +169,37 @@ class TestPostsRetrieving(APITestCase):
                                    **user_token(1, 'user1'))
         print(response.content)
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND, 'Wrong page showing')
+
+
+# Tests for the exact post getting with existence check, and likes demonstration
+class TestPostRetrieving(APITestCase):
+    def setUp(self):
+        user1 = User.objects.create(username='user1', password=make_password('chat1597'), email='test_email1@gmail.com')
+        user2 = User.objects.create(username='user2', password=make_password('chat1597'), email='test_email2@gmail.com')
+
+        post1 = Post.objects.create(creator=user1, title='Post title', content='Post content')
+        post1.likes.add(user2)
+
+    def test_getWrongPost(self):
+        response = self.client.post(reverse('post'), kwargs={'pk': '57'}, **user_token(2, 'user2'))
+        print(json.dumps(response.body))
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST, 'Wrong post was returned')
+
+    def test_getPost(self):
+        # Check from the liked user
+        response = self.client.post(reverse('post'), kwargs={'pk': '1'}, **user_token(2, 'user2'))
+        print(json.dumps(response.body))
+        result = json.dumps(response.body)
+        self.assertEqual(response.status_code, status.HTTP_200_OK, 'Request failed')
+        self.assertEqual(result['like'], 1, 'Like is not registered')
+
+        # Check from the non liked user
+        response = self.client.post(reverse('post'), kwargs={'pk': '1'}, **user_token(1, 'user1'))
+        print(json.dumps(response.body))
+        result = json.dumps(response.body)
+        self.assertEqual(response.status_code, status.HTTP_200_OK, 'Request failed')
+        self.assertEqual(result['like'], 0, 'Like exists, but it doesnt need to be there')
+
+
+
+
