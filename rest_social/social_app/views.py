@@ -6,7 +6,7 @@ from rest_framework.exceptions import ParseError
 from django.contrib.auth.hashers import make_password
 from rest_framework.views import status
 from rest_social.settings import SECRET_KEY
-from .serializers import UserSerializer, LoginSerializer, PostSerializer
+from .serializers import UserSerializer, LoginSerializer, PostSerializer, PostsOutputSerializer
 from .models import User, Post
 from .authentication import TokenAuthentication
 from .pagination import CustomPagination
@@ -90,5 +90,15 @@ def add_post_view(request):
     return Response(data=data, status=status_code)
 
 
-
-
+@api_view(['GET'])
+@permission_classes([IsAuthenticated, ])
+@authentication_classes([TokenAuthentication, ])
+def get_all_posts_view(request):
+    authentication_classes(TokenAuthentication, )
+    user_data = jwt.decode(bytes(request.headers.get('token'), 'utf-8'), SECRET_KEY, ['HS256'])
+    user = User.objects.get(username=user_data['username'])
+    paginator = CustomPagination()
+    posts = Post.objects.all()
+    result_page = paginator.paginate_queryset(posts, request)
+    serializer = PostsOutputSerializer(result_page, many=True, context={'request': request})
+    return paginator.get_paginated_response(serializer.data)

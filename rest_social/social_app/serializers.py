@@ -56,7 +56,19 @@ class LoginSerializer(serializers.Serializer):
     password = serializers.CharField(required=True, allow_null=False)
 
 
-class PostSerializer(serializers.Serializer):
+class PostSerializer(serializers.ModelSerializer):
     class Meta:
         model = Post
         fields = ('title', 'content')
+
+
+class PostsOutputSerializer(serializers.ModelSerializer):
+
+    likes_count = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Post
+        fields = ('title', 'content', 'date', 'likes_count')
+
+    def get_likes_count(self, obj):
+        return obj.likes.count()

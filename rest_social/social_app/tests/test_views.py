@@ -138,7 +138,7 @@ class TestAddPostView(APITestCase):
         self.assertTrue(Post.objects.filter(creator=user2) is not None, 'Post wasnt added')
 
 
-class TestPostsRetieving(APITestCase):
+class TestPostsRetrieving(APITestCase):
     def setUp(self):
         user1 = User.objects.create(username='user1', password=make_password('chat1597'), email='test_email1@gmail.com')
 
@@ -151,17 +151,17 @@ class TestPostsRetieving(APITestCase):
         # Get first page by default
         response = self.client.get('http://testserver/posts/', content_type='application/json',
                                    **user_token(1, 'user1'))
-        print(response.data)
+        print(response.content)
         self.assertEqual(response.status_code, status.HTTP_200_OK, 'Request failed')
 
         # Get third page
-        response = self.client.get('http://testserver/posts?page=3', content_type='application/json',
+        response = self.client.get('http://testserver/posts/?page=3', content_type='application/json',
                                    **user_token(1, 'user1'))
-        print(response.data)
+        print(response.content)
         self.assertEqual(response.status_code, status.HTTP_200_OK, 'Request failed')
 
     def test_getWrongPage(self):
-        response = self.client.get('http://testserver/posts?page=70', content_type='application/json',
+        response = self.client.get('http://testserver/posts/?page=70', content_type='application/json',
                                    **user_token(1, 'user1'))
-        print(response.data)
+        print(response.content)
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND, 'Wrong page showing')

@@ -74,7 +74,7 @@ TEMPLATES = [
 
 REST_FRAMEWORK = {
     'TEST_REQUEST_DEFAULT_FORMAT': 'json',
-    'DEFAULT_PAGINATION_CLASS': 'social_app.pagination.CustomPagination',
+    'DEFAULT_PAGINATION_CLASS': 'rest_social.social_app.pagination.CustomPagination',
     'PAGE_SIZE': 10,
 }
 
