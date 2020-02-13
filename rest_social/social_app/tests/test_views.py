@@ -200,5 +200,53 @@ class TestPostRetrieving(APITestCase):
         self.assertEqual(result['like'], 0, 'Like exists, but it doesnt need to be there')
 
 
+# Tests for the like / unlike, with existing post check, fields validation
+class TestMarkChanging(APITestCase):
+    def setUp(self):
+        user1 = User.objects.create(username='user1', password=make_password('chat1597'), email='test_email1@gmail.com')
+
+        post1 = Post.objects.create(creator=user1, title='Post title 1', content='Post content')
+        post2 = Post.objects.create(creator=user1, title='Post title 2', content='Post content')
+        post1.likes.add(user1)
+
+    def test_FieldsValidating(self):
+        response = self.client.post(reverse('change-mark'),
+                                    {'post_id': 2, 'unlike': ''},
+                                    **user_token(1, 'user1'))
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST, 'Empty fields were passed')
+
+        response = self.client.post(reverse('change-mark'),
+                                    {'post_id': 3, 'like': 0, 'unlike': 1},
+                                    **user_token(1, 'user1'))
+
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND, 'Mark changing for the non-existing post')
+
+    def test_MarkNotChanging(self):
+        response = self.client.post(reverse('change-mark'),
+                                    {'post_id': 1, 'like': 0, 'unlike': 0},
+                                    **user_token(1, 'user1'))
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST, 'Same values for like / unlike')
+
+    def test_Unlike(self):
+        user1 = User.objects.get(username='user1')
+        response = self.client.post(reverse('change-mark'),
+                                    {'post_id': 1, 'like': 0, 'unlike': 1},
+                                    **user_token(1, 'user1'))
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK, 'Mark was not changed')
+        self.assertTrue(user1.liked_posts.all() is None, 'Like was not removed')
+
+    def test_Like(self):
+        user1 = User.objects.get(username='user1')
+        response = self.client.post(reverse('change-mark'),
+                                    {'post_id': 2, 'like': 1, 'unlike': 0},
+                                    **user_token(1, 'user1'))
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK, 'Mark was not changed')
+        self.assertEqual(user1.liked_posts.all(), Post.objects.all(), 'Like was not removed')
+
+
 
 
