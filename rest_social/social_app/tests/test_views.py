@@ -8,6 +8,15 @@ from rest_social.settings import SECRET_KEY
 import jwt
 
 
+# Method for token generation
+def user_token(user_id, username):
+    payload = {
+        'id': user_id,
+        'username': username
+    }
+    return {'HTTP_token': jwt.encode(payload, SECRET_KEY).decode('utf-8')}
+
+
 # Tests for registration request with data validating, checking for existing users, email verification
 class TestRegistration(APITestCase):
     client = APIClient()
@@ -68,6 +77,7 @@ class TestLoginView(APITestCase):
     def setUp(self):
         User.objects.create(username='user1', password=make_password('chat1597'), email='test_email1@gmail.com')
         User.objects.create(username='user2', password=make_password('chat1597'), email='test_email2@gmail.com')
+
     def test_requiredFieldChecking(self):
         response = self.client.post(reverse('login'), {'username': ''})
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST, 'Missed required field')
@@ -93,3 +103,38 @@ class TestLoginView(APITestCase):
         print(received, expected)
         self.assertEqual(response.status_code, status.HTTP_200_OK, 'Authorization failed')
         self.assertEqual(received, expected, 'JWT token failed')
+
+
+# Tests for post adding, data validating, fields checking
+class TestAddPostView(APITestCase):
+
+    def setUp(self):
+        User.objects.create(username='user1', password=make_password('chat1597'), email='test_email1@gmail.com')
+        User.objects.create(username='user2', password=make_password('chat1597'), email='test_email2@gmail.com')
+
+    def test_Auth(self):
+        response = self.client.post(reverse('add-post'),
+                                    {'creator': '1', 'title': 'Post Title', 'content': 'Post content'})
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN, 'Problems with JWT')
+
+    def test_FieldsValidating(self):
+        response = self.client.post(reverse('add-post'),
+                                    {'creator': '', }, **user_token(1, 'user1'))
+        print(response.data)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST, 'Fields dont validate')
+
+        response = self.client.post(reverse('add-post'),
+                                    {'creator': '2', 'title': 'Post title', 'content': ''},
+                                    **user_token(2, 'user2'))
+        print(response.data)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST, 'Adding post with empty content')
+
+    def test_SuccessfulSending(self):
+        response = self.client.post(reverse('add-post'),
+                                    {'creator': '2', 'title': 'Post title', 'content': 'Post content'},
+                                    **user_token(2, 'user2'))
+        print(response.data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK, 'Sending problems')
+
+        user2 = User.objects.get(username='user2')
+        self.assertEqual(Post.objects.filter(creator=user2), Post.objects.all(), 'Post wasnt added')
