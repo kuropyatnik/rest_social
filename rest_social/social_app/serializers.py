@@ -84,3 +84,21 @@ class PostOutputSerializer(serializers.ModelSerializer):
 
     def get_likes_count(self, obj):
         return obj.likes.count()
+
+
+class MarkSerializer(serializers.Serializer):
+    post_id = serializers.IntegerField(allow_null=False)
+    like = serializers.IntegerField(allow_null=False)
+    unlike = serializers.IntegerField(allow_null=False)
+
+    def validate(self, data):
+        like = data.get('like')
+        unlike = data.get('unlike')
+
+        if like == unlike:
+            raise ValidationError("Marks are equal")
+
+        return super(MarkSerializer, self).validate(data)
+
+    class Meta:
+        fields = ('post_id', 'like', 'unlike')

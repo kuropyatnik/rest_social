@@ -220,7 +220,7 @@ class TestMarkChanging(APITestCase):
                                     {'post_id': 3, 'like': 0, 'unlike': 1},
                                     **user_token(1, 'user1'))
 
-        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND, 'Mark changing for the non-existing post')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST, 'Mark changing for the non-existing post')
 
     def test_MarkNotChanging(self):
         response = self.client.post(reverse('change-mark'),
@@ -235,8 +235,8 @@ class TestMarkChanging(APITestCase):
                                     {'post_id': 1, 'like': 0, 'unlike': 1},
                                     **user_token(1, 'user1'))
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK, 'Mark was not changed')
-        self.assertTrue(user1.liked_posts.all() is None, 'Like was not removed')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED, 'Mark was not changed')
+        self.assertTrue(user1.liked_posts.all().count() == 0, 'Like was not removed')
 
     def test_Like(self):
         user1 = User.objects.get(username='user1')
@@ -244,8 +244,8 @@ class TestMarkChanging(APITestCase):
                                     {'post_id': 2, 'like': 1, 'unlike': 0},
                                     **user_token(1, 'user1'))
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK, 'Mark was not changed')
-        self.assertEqual(user1.liked_posts.all(), Post.objects.all(), 'Like was not removed')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED, 'Mark was not changed')
+        self.assertEqual(list(user1.liked_posts.all()), list(Post.objects.all()), 'Like was removed')
 
 
 

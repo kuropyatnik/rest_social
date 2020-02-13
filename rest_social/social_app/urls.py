@@ -1,6 +1,6 @@
 from django.urls import path
 from django.conf.urls import url
-from .views import register_user_view, login_view, add_post_view, get_all_posts_view, get_post_view
+from .views import register_user_view, login_view, add_post_view, get_all_posts_view, get_post_view, set_mark_view
 
 urlpatterns = [
     path('register/', register_user_view, name='register'),
@@ -8,5 +8,6 @@ urlpatterns = [
     path('add-post/', add_post_view, name='add-post'),
     path('posts/', get_all_posts_view, name='posts'),
     # url(r'^get-post/(?P<pk>\d+)$', get_post_view, name='get-post'),
-    path('post/<int:pk>/', get_post_view, name='post')
+    path('post/<int:pk>/', get_post_view, name='post'),
+    path('change-mark/', set_mark_view, name='change-mark')
 ]

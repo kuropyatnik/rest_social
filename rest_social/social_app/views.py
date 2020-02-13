@@ -7,11 +7,11 @@ from django.contrib.auth.hashers import make_password
 from django.db.models import Value, IntegerField
 from rest_framework.views import status
 from rest_social.settings import SECRET_KEY
-from .serializers import UserSerializer, LoginSerializer, PostSerializer, PostsOutputSerializer, PostOutputSerializer
+from .serializers import UserSerializer, LoginSerializer, PostSerializer, PostsOutputSerializer, PostOutputSerializer, MarkSerializer
 from .models import User, Post
 from .authentication import TokenAuthentication
 from .pagination import CustomPagination
-import jwt
+import jwt, json
 
 
 # Create your views here.
@@ -130,3 +130,40 @@ def get_post_view(request, pk):
 
     return Response(data=data, status=status_code)
 
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated, ])
+@authentication_classes([TokenAuthentication, ])
+def set_mark_view(request):
+    authentication_classes(TokenAuthentication, )
+    user_data = jwt.decode(bytes(request.headers.get('token'), 'utf-8'), SECRET_KEY, ['HS256'])
+    user = User.objects.get(username=user_data['username'])
+
+    try:
+        serialized = MarkSerializer(data=request.data, context={'request': request})
+        if serialized.is_valid():
+
+            mark_data = serialized.data
+
+            post_id = int(mark_data['post_id'])
+            like = int(mark_data['like'])
+            unlike = int(mark_data['unlike'])
+
+            post = Post.objects.get(id=post_id)
+
+            if like > unlike:
+                post.likes.add(user)
+
+            else:
+                if user in post.likes.all():
+                    post.likes.remove(user)
+
+            data = {"Result": "Mark was successfully changed"}
+            status_code = status.HTTP_201_CREATED
+        else:
+            data = {key: str(value[0]) for key, value in serialized.errors.items()}
+            status_code = status.HTTP_400_BAD_REQUEST
+    except Exception as e:
+        data = {'Error': 'Bad request \n' + str(e)}
+        status_code = status.HTTP_400_BAD_REQUEST
+    return Response(data=data, status=status_code)
